@@ -1,0 +1,12 @@
+# R session
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+
+narc and intergenerational assistance.Rproj
+
+data/raw
+data/processed
+
