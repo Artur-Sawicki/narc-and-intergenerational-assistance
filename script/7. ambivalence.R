@@ -39,3 +39,33 @@ results <- bind_rows(
 results
 
 write_xlsx(results,"output/tables/ambivalence regressions.xlsx")
+
+#regressions across waves - gender moderation ####
+dblong$sex.w9 <- haven::as_factor(dblong$sex.w9, levels = "labels")
+dblong$sex.w9 <- sub("^-?\\d+\\s+", "", dblong$sex.w9)
+
+table(dblong$sex.w9)
+
+reg.w9.par <- lm("par.amb.w9 ~ sex.w9*(adm.w9+riv.w9)",data = dblong)
+reg.w9.moth <- lm("moth.amb.w9 ~ sex.w9*(adm.w9+riv.w9)",data = dblong)
+reg.w9.fath <- lm("fath.amb.w9 ~ sex.w9*(adm.w9+riv.w9)",data = dblong)
+
+reg.w11.par <- lm("par.amb.w11 ~ sex.w9*(adm.w11+riv.w11)",data = dblong)
+reg.w11.moth <- lm("moth.amb.w11 ~ sex.w9*(adm.w11+riv.w11)",data = dblong)
+reg.w11.fath <- lm("fath.amb.w11 ~ sex.w9*(adm.w11+riv.w11)",data = dblong)
+
+
+results <- bind_rows(
+  extract_model(reg.w9.par,  "w9",  "par"),
+  extract_model(reg.w9.moth, "w9",  "moth"),
+  extract_model(reg.w9.fath, "w9",  "fath"),
+  
+  extract_model(reg.w11.par,  "w11", "par"),
+  extract_model(reg.w11.moth, "w11", "moth"),
+  extract_model(reg.w11.fath, "w11", "fath"),
+  
+) 
+
+results
+
+write_xlsx(results,"output/tables/ambivalence interactions.xlsx")

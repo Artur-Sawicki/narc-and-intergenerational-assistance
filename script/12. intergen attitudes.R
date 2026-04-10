@@ -24,3 +24,17 @@ results <-extract_model(reg.w9.par,  "w9",  "par")
 results
 
 write_xlsx(results,"output/tables/intergen attitudes regressions.xlsx")
+
+#regressions across waves - gender moderation ####
+dblong$sex.w9 <- haven::as_factor(dblong$sex.w9, levels = "labels")
+dblong$sex.w9 <- sub("^-?\\d+\\s+", "", dblong$sex.w9)
+
+table(dblong$sex.w9)
+
+reg.w9.par <- lm("intgen.sup.att.w10 ~ sex.w9*(adm.w9+riv.w9)",data = dblong)
+
+results <-extract_model(reg.w9.par,  "w9",  "par") 
+
+results
+
+write_xlsx(results,"output/tables/intergen attitudes interactions.xlsx")
