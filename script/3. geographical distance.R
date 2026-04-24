@@ -83,3 +83,317 @@ results <- bind_rows(
 results
 
 write_xlsx(results,"output/tables/geo distance interactions.xlsx")
+
+# CLPM ####
+## MOTHER ####
+m.geo.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*moth.geo.w9
+                adm.w13 ~ a*adm.w11 + b*riv.w11 + c*moth.geo.w11
+                
+                riv.w11 ~ d*adm.w9 + e*riv.w9 + f*moth.geo.w9
+                riv.w13 ~ d*adm.w11 + e*riv.w11 + f*moth.geo.w11
+                
+                moth.geo.w11 ~ g*adm.w9 + h*riv.w9 + i*moth.geo.w9
+                moth.geo.w13 ~ g*adm.w11 + h*riv.w11 + i*moth.geo.w11
+                
+                adm.w9 ~~ riv.w9 + moth.geo.w9
+                adm.w11 ~~ riv.w11 + moth.geo.w11
+                adm.w13 ~~ riv.w13 + moth.geo.w13
+                
+                riv.w11 ~~ moth.geo.w11
+                riv.w9 ~~ moth.geo.w9
+"
+m.geo.clpm.fit <- sem(m.geo.clpm.mod, data = dblong, missing = "FIML", estimator = "MLR")
+summary(m.geo.clpm.fit, fit.measures=T, standardized=T,rsquare=T)
+moth.clpm<-standardizedSolution(m.geo.clpm.fit)%>%as.data.frame()
+
+## FATHER ####
+f.geo.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*moth.geo.w9
+                adm.w13 ~ a*adm.w11 + b*riv.w11 + c*moth.geo.w11
+                
+                riv.w11 ~ d*adm.w9 + e*riv.w9 + f*moth.geo.w9
+                riv.w13 ~ d*adm.w11 + e*riv.w11 + f*moth.geo.w11
+                
+                moth.geo.w11 ~ g*adm.w9 + h*riv.w9 + i*moth.geo.w9
+                moth.geo.w13 ~ g*adm.w11 + h*riv.w11 + i*moth.geo.w11
+                
+                adm.w9 ~~ riv.w9 + moth.geo.w9
+                adm.w11 ~~ riv.w11 + moth.geo.w11
+                adm.w13 ~~ riv.w13 + moth.geo.w13
+                
+                riv.w11 ~~ moth.geo.w11
+                riv.w9 ~~ moth.geo.w9
+"
+f.geo.clpm.fit <- sem(f.geo.clpm.mod, data = dblong, missing = "FIML", estimator = "MLR")
+summary(f.geo.clpm.fit, fit.measures=T, standardized=T,rsquare=T)
+fath.clpm<-standardizedSolution(f.geo.clpm.fit)%>%as.data.frame()
+
+# random-intercept cross-lag panel model - correlation ####
+## MOTHER ####
+m.geo.riclpm.mod <- '
+  # between-person
+  RIadm =~ 1*adm.w9 + 1*adm.w11 + 1*adm.w13
+  RIriv =~ 1*riv.w9 + 1*riv.w11 + 1*riv.w13 
+  RI.geo =~ 1*moth.geo.w9 + 1*moth.geo.w11 + 1*moth.geo.w13 
+  
+  # within-person
+  wadm.w9 =~ 1*adm.w9
+  wadm.w11 =~ 1*adm.w11
+  wadm.w13 =~ 1*adm.w13 
+
+  wriv.w9 =~ 1*riv.w9
+  wriv.w11 =~ 1*riv.w11
+  wriv.w13 =~ 1*riv.w13
+  
+  wmoth.geo.w9 =~ 1*moth.geo.w9
+  wmoth.geo.w11 =~ 1*moth.geo.w11
+  wmoth.geo.w13 =~ 1*moth.geo.w13
+  
+  # lagged
+  wadm.w11 ~ a*wadm.w9 + b*wriv.w9 + e*wmoth.geo.w9
+  wriv.w11 ~ c*wadm.w9 + d*wriv.w9 + f*wmoth.geo.w9
+  wmoth.geo.w11 ~ g*wadm.w9 + h*wriv.w9 + i*wmoth.geo.w9
+  
+  wadm.w13 ~ a*wadm.w11 + b*wriv.w11 + e*wmoth.geo.w11
+  wriv.w13 ~ c*wadm.w11 + d*wriv.w11 + f*wmoth.geo.w11
+  wmoth.geo.w13 ~ g*wadm.w11 + h*wriv.w11 + i*wmoth.geo.w11
+
+  # fluctuations
+  wadm.w11 ~~ cov1*wriv.w11 + cov2*wmoth.geo.w11
+  wadm.w13 ~~ cov1*wriv.w13 + cov2*wmoth.geo.w13
+  wriv.w11 ~~ cov3*wmoth.geo.w11
+  wriv.w13 ~~ cov3*wmoth.geo.w13
+  
+  # first wave cor
+  wadm.w9 ~~ wriv.w9 + wmoth.geo.w9 
+  wriv.w9 ~~ wmoth.geo.w9 
+  
+  # relationships on between-person level (cor or reg, to choose) 
+  RIadm ~~ RIadm
+  RIriv ~~ RIriv
+  RI.geo ~~ RI.geo
+  RIadm ~~ RIriv + RI.geo
+  RIriv ~~ RI.geo
+  
+  # within-person var
+  wadm.w9 ~~ wadm.w9 # var
+  wriv.w9 ~~ wriv.w9 
+  wmoth.geo.w9 ~~ wmoth.geo.w9 
+  
+  wadm.w11 ~~ vadm*wadm.w11 # residual var
+  wriv.w11 ~~ vriv*wriv.w11
+  wmoth.geo.w11 ~~ vse*wmoth.geo.w11
+  
+  wadm.w13 ~~ vadm*wadm.w13 
+  wriv.w13 ~~ vriv*wriv.w13
+  wmoth.geo.w13 ~~ vse*wmoth.geo.w13
+
+'
+m.geo.riclpm.fit <- lavaan(m.geo.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+summary(m.geo.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
+moth.cor<-standardizedSolution(m.geo.riclpm.fit)%>%as.data.frame()
+
+## FATHER ####
+f.geo.riclpm.mod <- '
+  # between-person
+  RIadm =~ 1*adm.w9 + 1*adm.w11 + 1*adm.w13
+  RIriv =~ 1*riv.w9 + 1*riv.w11 + 1*riv.w13 
+  RI.geo =~ 1*fath.geo.w9 + 1*fath.geo.w11 + 1*fath.geo.w13 
+  
+  # within-person
+  wadm.w9 =~ 1*adm.w9
+  wadm.w11 =~ 1*adm.w11
+  wadm.w13 =~ 1*adm.w13 
+
+  wriv.w9 =~ 1*riv.w9
+  wriv.w11 =~ 1*riv.w11
+  wriv.w13 =~ 1*riv.w13
+  
+  wfath.geo.w9 =~ 1*fath.geo.w9
+  wfath.geo.w11 =~ 1*fath.geo.w11
+  wfath.geo.w13 =~ 1*fath.geo.w13
+  
+  # lagged
+  wadm.w11 ~ a*wadm.w9 + b*wriv.w9 + e*wfath.geo.w9
+  wriv.w11 ~ c*wadm.w9 + d*wriv.w9 + f*wfath.geo.w9
+  wfath.geo.w11 ~ g*wadm.w9 + h*wriv.w9 + i*wfath.geo.w9
+  
+  wadm.w13 ~ a*wadm.w11 + b*wriv.w11 + e*wfath.geo.w11
+  wriv.w13 ~ c*wadm.w11 + d*wriv.w11 + f*wfath.geo.w11
+  wfath.geo.w13 ~ g*wadm.w11 + h*wriv.w11 + i*wfath.geo.w11
+
+  # fluctuations
+  wadm.w11 ~~ cov1*wriv.w11 + cov2*wfath.geo.w11
+  wadm.w13 ~~ cov1*wriv.w13 + cov2*wfath.geo.w13
+  wriv.w11 ~~ cov3*wfath.geo.w11
+  wriv.w13 ~~ cov3*wfath.geo.w13
+  
+  # first wave cor
+  wadm.w9 ~~ wriv.w9 + wfath.geo.w9 
+  wriv.w9 ~~ wfath.geo.w9 
+  
+  # relationships on between-person level (cor or reg, to choose) 
+  RIadm ~~ RIadm
+  RIriv ~~ RIriv
+  RI.geo ~~ RI.geo
+  RIadm ~~ RIriv + RI.geo
+  RIriv ~~ RI.geo
+  
+  # within-person var
+  wadm.w9 ~~ wadm.w9 # var
+  wriv.w9 ~~ wriv.w9 
+  wfath.geo.w9 ~~ wfath.geo.w9 
+  
+  wadm.w11 ~~ vadm*wadm.w11 # residual var
+  wriv.w11 ~~ vriv*wriv.w11
+  wfath.geo.w11 ~~ vse*wfath.geo.w11
+  
+  wadm.w13 ~~ vadm*wadm.w13 
+  wriv.w13 ~~ vriv*wriv.w13
+  wfath.geo.w13 ~~ vse*wfath.geo.w13
+
+'
+f.geo.riclpm.fit <- lavaan(f.geo.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+summary(f.geo.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
+fath.cor<-standardizedSolution(m.geo.riclpm.fit)%>%as.data.frame()
+
+
+
+
+# random-intercept cross-lag panel model - regression ####
+## MOTHER ####
+m.geo.riclpm.mod <- '
+  # between-person
+  RIadm =~ 1*adm.w9 + 1*adm.w11 + 1*adm.w13
+  RIriv =~ 1*riv.w9 + 1*riv.w11 + 1*riv.w13 
+  RI.geo =~ 1*moth.geo.w9 + 1*moth.geo.w11 + 1*moth.geo.w13 
+  
+  # within-person
+  wadm.w9 =~ 1*adm.w9
+  wadm.w11 =~ 1*adm.w11
+  wadm.w13 =~ 1*adm.w13 
+
+  wriv.w9 =~ 1*riv.w9
+  wriv.w11 =~ 1*riv.w11
+  wriv.w13 =~ 1*riv.w13
+  
+  wmoth.geo.w9 =~ 1*moth.geo.w9
+  wmoth.geo.w11 =~ 1*moth.geo.w11
+  wmoth.geo.w13 =~ 1*moth.geo.w13
+  
+  # lagged
+  wadm.w11 ~ a*wadm.w9 + b*wriv.w9 + e*wmoth.geo.w9
+  wriv.w11 ~ c*wadm.w9 + d*wriv.w9 + f*wmoth.geo.w9
+  wmoth.geo.w11 ~ g*wadm.w9 + h*wriv.w9 + i*wmoth.geo.w9
+  
+  wadm.w13 ~ a*wadm.w11 + b*wriv.w11 + e*wmoth.geo.w11
+  wriv.w13 ~ c*wadm.w11 + d*wriv.w11 + f*wmoth.geo.w11
+  wmoth.geo.w13 ~ g*wadm.w11 + h*wriv.w11 + i*wmoth.geo.w11
+
+  # fluctuations
+  wadm.w11 ~~ cov1*wriv.w11 + cov2*wmoth.geo.w11
+  wadm.w13 ~~ cov1*wriv.w13 + cov2*wmoth.geo.w13
+  wriv.w11 ~~ cov3*wmoth.geo.w11
+  wriv.w13 ~~ cov3*wmoth.geo.w13
+  
+  # first wave cor
+  wadm.w9 ~~ wriv.w9 + wmoth.geo.w9 
+  wriv.w9 ~~ wmoth.geo.w9 
+  
+  # relationships on between-person level (cor or reg, to choose) 
+  RIadm ~~ RIadm
+  RIriv ~~ RIriv
+  RI.geo ~~ RI.geo
+  RI.geo ~ RIadm + RIriv 
+  RIriv ~~ RIadm
+  
+  # within-person var
+  wadm.w9 ~~ wadm.w9 # var
+  wriv.w9 ~~ wriv.w9 
+  wmoth.geo.w9 ~~ wmoth.geo.w9 
+  
+  wadm.w11 ~~ vadm*wadm.w11 # residual var
+  wriv.w11 ~~ vriv*wriv.w11
+  wmoth.geo.w11 ~~ vse*wmoth.geo.w11
+  
+  wadm.w13 ~~ vadm*wadm.w13 
+  wriv.w13 ~~ vriv*wriv.w13
+  wmoth.geo.w13 ~~ vse*wmoth.geo.w13
+
+'
+m.geo.riclpm.fit <- lavaan(m.geo.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+summary(m.geo.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
+moth.reg<-standardizedSolution(m.geo.riclpm.fit)%>%as.data.frame()
+
+## FATHER ####
+f.geo.riclpm.mod <- '
+  # between-person
+  RIadm =~ 1*adm.w9 + 1*adm.w11 + 1*adm.w13
+  RIriv =~ 1*riv.w9 + 1*riv.w11 + 1*riv.w13 
+  RI.geo =~ 1*fath.geo.w9 + 1*fath.geo.w11 + 1*fath.geo.w13 
+  
+  # within-person
+  wadm.w9 =~ 1*adm.w9
+  wadm.w11 =~ 1*adm.w11
+  wadm.w13 =~ 1*adm.w13 
+
+  wriv.w9 =~ 1*riv.w9
+  wriv.w11 =~ 1*riv.w11
+  wriv.w13 =~ 1*riv.w13
+  
+  wfath.geo.w9 =~ 1*fath.geo.w9
+  wfath.geo.w11 =~ 1*fath.geo.w11
+  wfath.geo.w13 =~ 1*fath.geo.w13
+  
+  # lagged
+  wadm.w11 ~ a*wadm.w9 + b*wriv.w9 + e*wfath.geo.w9
+  wriv.w11 ~ c*wadm.w9 + d*wriv.w9 + f*wfath.geo.w9
+  wfath.geo.w11 ~ g*wadm.w9 + h*wriv.w9 + i*wfath.geo.w9
+  
+  wadm.w13 ~ a*wadm.w11 + b*wriv.w11 + e*wfath.geo.w11
+  wriv.w13 ~ c*wadm.w11 + d*wriv.w11 + f*wfath.geo.w11
+  wfath.geo.w13 ~ g*wadm.w11 + h*wriv.w11 + i*wfath.geo.w11
+
+  # fluctuations
+  wadm.w11 ~~ cov1*wriv.w11 + cov2*wfath.geo.w11
+  wadm.w13 ~~ cov1*wriv.w13 + cov2*wfath.geo.w13
+  wriv.w11 ~~ cov3*wfath.geo.w11
+  wriv.w13 ~~ cov3*wfath.geo.w13
+  
+  # first wave cor
+  wadm.w9 ~~ wriv.w9 + wfath.geo.w9 
+  wriv.w9 ~~ wfath.geo.w9 
+  
+  # relationships on between-person level (cor or reg, to choose) 
+  RIadm ~~ RIadm
+  RIriv ~~ RIriv
+  RI.geo ~~ RI.geo
+  RI.geo ~ RIadm + RIriv 
+  RIriv ~~ RIadm
+  
+  # within-person var
+  wadm.w9 ~~ wadm.w9 # var
+  wriv.w9 ~~ wriv.w9 
+  wfath.geo.w9 ~~ wfath.geo.w9 
+  
+  wadm.w11 ~~ vadm*wadm.w11 # residual var
+  wriv.w11 ~~ vriv*wriv.w11
+  wfath.geo.w11 ~~ vse*wfath.geo.w11
+  
+  wadm.w13 ~~ vadm*wadm.w13 
+  wriv.w13 ~~ vriv*wriv.w13
+  wfath.geo.w13 ~~ vse*wfath.geo.w13
+
+'
+f.geo.riclpm.fit <- lavaan(f.geo.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+summary(f.geo.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
+fath.reg<-standardizedSolution(f.geo.riclpm.fit)%>%as.data.frame()
+
+
+
+# export ####
+write_xlsx(list(
+  mother.clpm = moth.clpm, father.clpm = fath.clpm,
+  mother.cor = moth.cor,father.cor = fath.cor, 
+  mother.reg = moth.reg,father.reg = fath.reg), "output/tables/RICLPM geo distance.xlsx")
+
+
