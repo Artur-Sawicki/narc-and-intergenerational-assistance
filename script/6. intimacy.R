@@ -102,30 +102,45 @@ m.intim.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*moth.intim.w9
                 riv.w11 ~~ moth.intim.w11
                 riv.w9 ~~ moth.intim.w9
 "
+
 m.intim.clpm.fit <- sem(m.intim.clpm.mod, data = dblong, missing = "FIML", estimator = "MLR")
 summary(m.intim.clpm.fit, fit.measures=T, standardized=T,rsquare=T)
-moth.clpm<-standardizedSolution(m.intim.clpm.fit)%>%as.data.frame()
+
+moth.clpm<-parameterEstimates(m.intim.clpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(m.intim.clpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+moth.clpm.fit <- fitMeasures(m.intim.clpm.fit, 
+                             c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 ## FATHER ####
-f.intim.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*moth.intim.w9
-                adm.w13 ~ a*adm.w11 + b*riv.w11 + c*moth.intim.w11
+f.intim.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*fath.intim.w9
+                adm.w13 ~ a*adm.w11 + b*riv.w11 + c*fath.intim.w11
                 
-                riv.w11 ~ d*adm.w9 + e*riv.w9 + f*moth.intim.w9
-                riv.w13 ~ d*adm.w11 + e*riv.w11 + f*moth.intim.w11
+                riv.w11 ~ d*adm.w9 + e*riv.w9 + f*fath.intim.w9
+                riv.w13 ~ d*adm.w11 + e*riv.w11 + f*fath.intim.w11
                 
-                moth.intim.w11 ~ g*adm.w9 + h*riv.w9 + i*moth.intim.w9
-                moth.intim.w13 ~ g*adm.w11 + h*riv.w11 + i*moth.intim.w11
+                fath.intim.w11 ~ g*adm.w9 + h*riv.w9 + i*fath.intim.w9
+                fath.intim.w13 ~ g*adm.w11 + h*riv.w11 + i*fath.intim.w11
                 
-                adm.w9 ~~ riv.w9 + moth.intim.w9
-                adm.w11 ~~ riv.w11 + moth.intim.w11
-                adm.w13 ~~ riv.w13 + moth.intim.w13
+                adm.w9 ~~ riv.w9 + fath.intim.w9
+                adm.w11 ~~ riv.w11 + fath.intim.w11
+                adm.w13 ~~ riv.w13 + fath.intim.w13
                 
-                riv.w11 ~~ moth.intim.w11
-                riv.w9 ~~ moth.intim.w9
+                riv.w11 ~~ fath.intim.w11
+                riv.w9 ~~ fath.intim.w9
 "
 f.intim.clpm.fit <- sem(f.intim.clpm.mod, data = dblong, missing = "FIML", estimator = "MLR")
 summary(f.intim.clpm.fit, fit.measures=T, standardized=T,rsquare=T)
-fath.clpm<-standardizedSolution(f.intim.clpm.fit)%>%as.data.frame()
+
+fath.clpm<-parameterEstimates(f.intim.clpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(f.intim.clpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+fath.clpm.fit <- fitMeasures(f.intim.clpm.fit, 
+                             c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 # random-intercept cross-lag panel model - correlation ####
 ## MOTHER ####
@@ -188,9 +203,17 @@ m.intim.riclpm.mod <- '
   wmoth.intim.w13 ~~ vse*wmoth.intim.w13
 
 '
-m.intim.riclpm.fit <- lavaan(m.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+m.intim.riclpm.fit <- lavaan(m.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(m.intim.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-moth.cor<-standardizedSolution(m.intim.riclpm.fit)%>%as.data.frame()
+
+
+moth.cor<-parameterEstimates(m.intim.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(m.intim.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+moth.cor.fit <- fitMeasures(m.intim.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 ## FATHER ####
 f.intim.riclpm.mod <- '
@@ -252,10 +275,16 @@ f.intim.riclpm.mod <- '
   wfath.intim.w13 ~~ vse*wfath.intim.w13
 
 '
-f.intim.riclpm.fit <- lavaan(f.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+f.intim.riclpm.fit <- lavaan(f.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(f.intim.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-fath.cor<-standardizedSolution(m.intim.riclpm.fit)%>%as.data.frame()
 
+fath.cor<-parameterEstimates(f.intim.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(f.intim.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+fath.cor.fit <- fitMeasures(f.intim.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 
 
@@ -320,10 +349,16 @@ m.intim.riclpm.mod <- '
   wmoth.intim.w13 ~~ vse*wmoth.intim.w13
 
 '
-m.intim.riclpm.fit <- lavaan(m.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+m.intim.riclpm.fit <- lavaan(m.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(m.intim.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-moth.reg<-standardizedSolution(m.intim.riclpm.fit)%>%as.data.frame()
 
+moth.reg<-parameterEstimates(m.intim.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(m.intim.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+moth.reg.fit <- fitMeasures(m.intim.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 ## FATHER ####
 f.intim.riclpm.mod <- '
   # between-person
@@ -384,15 +419,26 @@ f.intim.riclpm.mod <- '
   wfath.intim.w13 ~~ vse*wfath.intim.w13
 
 '
-f.intim.riclpm.fit <- lavaan(f.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+f.intim.riclpm.fit <- lavaan(f.intim.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(f.intim.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-fath.reg<-standardizedSolution(f.intim.riclpm.fit)%>%as.data.frame()
+
+fath.reg<-parameterEstimates(f.intim.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(f.intim.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+fath.reg.fit <- fitMeasures(m.intim.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 
 
 # export ####
 write_xlsx(list(
-  mother.clpm = moth.clpm, father.clpm = fath.clpm,
-  mother.cor = moth.cor,father.cor = fath.cor, 
-  mother.reg = moth.reg,father.reg = fath.reg), "output/tables/RICLPM intimacy.xlsx")
+  mother.clpm = moth.clpm, mother.clpm.fit = moth.clpm.fit, 
+  father.clpm = fath.clpm, father.clpm.fit = fath.clpm.fit,
+  mother.cor = moth.cor, mother.cor.fit = moth.cor.fit,
+  father.cor = fath.cor, father.cor.fit = fath.cor.fit,
+  mother.reg = moth.reg, mother.reg.fit = moth.reg.fit,
+  father.reg = fath.reg, father.reg.fit = fath.reg.fit), 
+  "output/tables/RICLPM intimacy.xlsx")
 

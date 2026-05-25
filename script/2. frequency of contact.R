@@ -106,29 +106,42 @@ m.frq.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*moth.con.frq.w9
 "
 m.frq.clpm.fit <- sem(m.frq.clpm.mod, data = dblong, missing = "FIML", estimator = "MLR")
 summary(m.frq.clpm.fit, fit.measures=T, standardized=T,rsquare=T)
-moth.clpm<-standardizedSolution(m.frq.clpm.fit)%>%as.data.frame()
+
+moth.clpm<-parameterEstimates(m.frq.clpm.fit) %>% as.data.frame()%>%left_join(
+           standardizedSolution(m.frq.clpm.fit)%>%as.data.frame()%>%
+           select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+moth.clpm.fit <- fitMeasures(m.frq.clpm.fit, 
+       c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 ## FATHER ####
-f.frq.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*moth.con.frq.w9
-                adm.w13 ~ a*adm.w11 + b*riv.w11 + c*moth.con.frq.w11
+f.frq.clpm.mod <- "adm.w11 ~ a*adm.w9 + b*riv.w9 + c*fath.con.frq.w9
+                adm.w13 ~ a*adm.w11 + b*riv.w11 + c*fath.con.frq.w11
                 
-                riv.w11 ~ d*adm.w9 + e*riv.w9 + f*moth.con.frq.w9
-                riv.w13 ~ d*adm.w11 + e*riv.w11 + f*moth.con.frq.w11
+                riv.w11 ~ d*adm.w9 + e*riv.w9 + f*fath.con.frq.w9
+                riv.w13 ~ d*adm.w11 + e*riv.w11 + f*fath.con.frq.w11
                 
-                moth.con.frq.w11 ~ g*adm.w9 + h*riv.w9 + i*moth.con.frq.w9
-                moth.con.frq.w13 ~ g*adm.w11 + h*riv.w11 + i*moth.con.frq.w11
+                fath.con.frq.w11 ~ g*adm.w9 + h*riv.w9 + i*fath.con.frq.w9
+                fath.con.frq.w13 ~ g*adm.w11 + h*riv.w11 + i*fath.con.frq.w11
                 
-                adm.w9 ~~ riv.w9 + moth.con.frq.w9
-                adm.w11 ~~ riv.w11 + moth.con.frq.w11
-                adm.w13 ~~ riv.w13 + moth.con.frq.w13
+                adm.w9 ~~ riv.w9 + fath.con.frq.w9
+                adm.w11 ~~ riv.w11 + fath.con.frq.w11
+                adm.w13 ~~ riv.w13 + fath.con.frq.w13
                 
-                riv.w11 ~~ moth.con.frq.w11
-                riv.w9 ~~ moth.con.frq.w9
+                riv.w11 ~~ fath.con.frq.w11
+                riv.w9 ~~ fath.con.frq.w9
 "
 f.frq.clpm.fit <- sem(f.frq.clpm.mod, data = dblong, missing = "FIML", estimator = "MLR")
 summary(f.frq.clpm.fit, fit.measures=T, standardized=T,rsquare=T)
-fath.clpm<-standardizedSolution(f.frq.clpm.fit)%>%as.data.frame()
 
+fath.clpm<-parameterEstimates(f.frq.clpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(f.frq.clpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+fath.clpm.fit <- fitMeasures(f.frq.clpm.fit, 
+                             c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 # random-intercept cross-lag panel model - correlation ####
 ## MOTHER ####
 m.frq.riclpm.mod <- '
@@ -190,9 +203,17 @@ m.frq.riclpm.mod <- '
   wmoth.con.frq.w13 ~~ vse*wmoth.con.frq.w13
 
 '
-m.frq.riclpm.fit <- lavaan(m.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+m.frq.riclpm.fit <- lavaan(m.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(m.frq.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-moth.cor<-standardizedSolution(m.frq.riclpm.fit)%>%as.data.frame()
+
+
+moth.cor<-parameterEstimates(m.frq.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(m.frq.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+moth.cor.fit <- fitMeasures(m.frq.riclpm.fit, 
+                             c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 ## FATHER ####
 f.frq.riclpm.mod <- '
@@ -254,12 +275,16 @@ f.frq.riclpm.mod <- '
   wfath.con.frq.w13 ~~ vse*wfath.con.frq.w13
 
 '
-f.frq.riclpm.fit <- lavaan(f.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+f.frq.riclpm.fit <- lavaan(f.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(f.frq.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-fath.cor<-standardizedSolution(m.frq.riclpm.fit)%>%as.data.frame()
 
+fath.cor<-parameterEstimates(f.frq.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(f.frq.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
 
-
+fath.cor.fit <- fitMeasures(f.frq.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 # random-intercept cross-lag panel model - regression ####
 ## MOTHER ####
@@ -322,9 +347,16 @@ m.frq.riclpm.mod <- '
   wmoth.con.frq.w13 ~~ vse*wmoth.con.frq.w13
 
 '
-m.frq.riclpm.fit <- lavaan(m.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+m.frq.riclpm.fit <- lavaan(m.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(m.frq.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-moth.reg<-standardizedSolution(m.frq.riclpm.fit)%>%as.data.frame()
+
+moth.reg<-parameterEstimates(m.frq.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(m.frq.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
+
+moth.reg.fit <- fitMeasures(m.frq.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 
 ## FATHER ####
 f.frq.riclpm.mod <- '
@@ -386,16 +418,24 @@ f.frq.riclpm.mod <- '
   wfath.con.frq.w13 ~~ vse*wfath.con.frq.w13
 
 '
-f.frq.riclpm.fit <- lavaan(f.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T) 
+f.frq.riclpm.fit <- lavaan(f.frq.riclpm.mod,data = dblong, meanstructure = T,  int.ov.free = T, estimator = "MLR") 
 summary(f.frq.riclpm.fit, fit.measures=T, standardized=T,rsquare=T)
-fath.reg<-standardizedSolution(f.frq.riclpm.fit)%>%as.data.frame()
 
-# RI-CLPM plus gender
+fath.reg<-parameterEstimates(f.frq.riclpm.fit) %>% as.data.frame()%>%left_join(
+  standardizedSolution(f.frq.riclpm.fit)%>%as.data.frame()%>%
+    select(lhs, op, rhs, est.std),by = c("lhs", "op", "rhs"),suffix = c(".unstd", ".std"))
 
+fath.reg.fit <- fitMeasures(m.frq.riclpm.fit, 
+                            c("chisq.scaled", "df.scaled","cfi.scaled","rmsea.scaled", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled","srmr")) %>%
+  as.data.frame()%>%  tibble::rownames_to_column("index")
 # export ####
 write_xlsx(list(
-  mother.clpm = moth.clpm, father.clpm = fath.clpm,
-  mother.cor = moth.cor,father.cor = fath.cor, 
-  mother.reg = moth.reg,father.reg = fath.reg), "output/tables/RICLPM frequency of contact.xlsx")
+  mother.clpm = moth.clpm, mother.clpm.fit = moth.clpm.fit, 
+  father.clpm = fath.clpm, father.clpm.fit = fath.clpm.fit,
+  mother.cor = moth.cor, mother.cor.fit = moth.cor.fit,
+  father.cor = fath.cor, father.cor.fit = fath.cor.fit,
+  mother.reg = moth.reg, mother.reg.fit = moth.reg.fit,
+  father.reg = fath.reg, father.reg.fit = fath.reg.fit), 
+  "output/tables/RICLPM frequency of contact.xlsx")
 
 
